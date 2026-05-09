@@ -1,4 +1,14 @@
+<div align="center">
+
 # **Viper Proxy**
+
+<img src="https://cdn.modrinth.com/data/iXxdllJq/459a2c3ec76e7e45071978255db265fd4ac60da4_96.webp" alt="Viper Proxy Logo" width="128" height="128">
+
+[![Made with Java](https://img.shields.io/badge/Made_with-Java-b07219?style=flat-square&logo=java&logoColor=white)](https://java.com/)
+[![Modrinth Downloads](https://img.shields.io/badge/dynamic/json?color=00AF5C&label=Downloads&query=downloads&url=https%3A%2F%2Fapi.modrinth.com%2Fv2%2Fproject%2Fviperproxy&style=flat-square&logo=github)](https://github.com/Viperisuseful/viperproxy/releases)
+[![Available on Modrinth](https://img.shields.io/badge/Available_on-Modrinth-1BD96A?style=flat-square&logo=modrinth&logoColor=white)](https://modrinth.com/mod/viperproxy)
+
+</div>
 
 Viper Proxy is a client-side Fabric mod that routes all of your multiplayer connections through a proxy server. It supports SOCKS5, HTTP, and HTTPS proxies.
 
