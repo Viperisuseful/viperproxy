@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "viperproxy",
+  "version": "${version}",
+  "name": "Viper Proxy",
+  "description": "Client-side forced proxy routing with strict fail-safe kill switch.",
+  "authors": [
+    "Viper"
+  ],
+  "contact": {
+    "sources": "https://example.com/viperproxy"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.viperproxy.ViperProxyClient"
+    ]
+  },
+  "mixins": [
+    "viperproxy.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "fabric-api": "*",
+    "minecraft": "1.21.11",
+    "java": ">=21"
+  }
+}
