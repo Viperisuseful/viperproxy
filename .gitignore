@@ -1,5 +1,6 @@
 .gradle/
 build/
+bin/
 out/
 run/
 .idea/
@@ -10,3 +11,13 @@ run/
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# IDE specific
+.classpath
+.project
+.settings/
+.vscode/
+
+# Image assets (root level)
+Logo-NOBG.png
+Logo.png
