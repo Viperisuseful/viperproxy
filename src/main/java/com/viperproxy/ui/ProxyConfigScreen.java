@@ -11,9 +11,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.events.InputWithModifiers;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -29,7 +30,7 @@ public final class ProxyConfigScreen extends Screen {
     private static final int LIST_ROW_HEIGHT = 20;
     private static final int DELETE_BUTTON_SIZE = 12;
 
-    private static final Identifier LOGO_TEXTURE = Identifier.of("viperproxy", "textures/gui/logo.png");
+    private static final Identifier LOGO_TEXTURE = Identifier.fromNamespaceAndPath("viperproxy", "textures/gui/logo.png");
     private static final int LOGO_DISPLAY_SIZE = 64;
 
     private static final int COLOR_SCREEN_OVERLAY = 0xCC000000;
@@ -145,7 +146,7 @@ public final class ProxyConfigScreen extends Screen {
         this.passwordField.setMaxLength(128);
         this.passwordField.setValue(config.password);
         this.passwordField.setBordered(false);
-        this.passwordField.setFormatter((text, firstCharacterIndex) ->
+        this.passwordField.addFormatter((text, firstCharacterIndex) ->
             FormattedCharSequence.forward("•".repeat(text.length()), Style.EMPTY)
         );
         configureSuggestionBehavior(this.passwordField, "Password (optional)");
@@ -209,25 +210,25 @@ public final class ProxyConfigScreen extends Screen {
     private int computePanelHeight(int lineHeight) {
         int currentY = 8;
 
-        currentY += LOGO_DISPLAY_SIZE + 8; // logo
-        currentY += 2 + 8; // title separator
-        currentY += lineHeight + 2; // profile label
-        currentY += ROW_HEIGHT + 8; // profile row
-        currentY += lineHeight + 2; // host label
-        currentY += ROW_HEIGHT + 8; // host field
-        currentY += lineHeight + 2; // port label
-        currentY += ROW_HEIGHT + 8; // port field
-        currentY += lineHeight + 2; // credentials label
-        currentY += ROW_HEIGHT + 8; // credentials fields
-        currentY += lineHeight + 2; // type label
-        currentY += ROW_HEIGHT + 4; // type button
-        currentY += 2 + 6; // separator
-        currentY += lineHeight + 2; // status
-        currentY += lineHeight + 2; // ip
-        currentY += lineHeight + 6; // latency
-        currentY += 2 + 6; // separator
-        currentY += ROW_HEIGHT + 4; // apply
-        currentY += ROW_HEIGHT; // close/reset
+        currentY += LOGO_DISPLAY_SIZE + 8;
+        currentY += 2 + 8;
+        currentY += lineHeight + 2;
+        currentY += ROW_HEIGHT + 8;
+        currentY += lineHeight + 2;
+        currentY += ROW_HEIGHT + 8;
+        currentY += lineHeight + 2;
+        currentY += ROW_HEIGHT + 8;
+        currentY += lineHeight + 2;
+        currentY += ROW_HEIGHT + 8;
+        currentY += lineHeight + 2;
+        currentY += ROW_HEIGHT + 4;
+        currentY += 2 + 6;
+        currentY += lineHeight + 2;
+        currentY += lineHeight + 2;
+        currentY += lineHeight + 6;
+        currentY += 2 + 6;
+        currentY += ROW_HEIGHT + 4;
+        currentY += ROW_HEIGHT;
 
         return currentY + 8;
     }
@@ -294,8 +295,7 @@ public final class ProxyConfigScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-        super.extractRenderState(context, mouseX, mouseY, delta);
-
+        // Render everything manually to control z-order (panels behind widgets).
         int contentX = this.leftPanelX + PADDING;
         int contentWidth = LEFT_PANEL_WIDTH - (PADDING * 2);
         int panelBottom = this.panelY + this.panelHeight;
@@ -311,28 +311,28 @@ public final class ProxyConfigScreen extends Screen {
         );
         context.fill(this.leftPanelX + 8, this.titleSeparatorY, this.leftPanelX + LEFT_PANEL_WIDTH - 8, this.titleSeparatorY + 2, COLOR_BORDER);
 
-        context.drawString(this.font, Component.literal("PROFILE"), contentX, this.profileLabelY, COLOR_LABEL, true);
-        context.drawString(this.font, Component.literal("HOST"), contentX, this.hostLabelY, COLOR_LABEL, true);
-        context.drawString(this.font, Component.literal("PORT"), contentX, this.portLabelY, COLOR_LABEL, true);
-        context.drawString(this.font, Component.literal("USERNAME / PASSWORD"), contentX, this.credentialsLabelY, COLOR_LABEL, true);
-        context.drawString(this.font, Component.literal("TYPE"), contentX, this.typeLabelY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal("PROFILE"), contentX, this.profileLabelY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal("HOST"), contentX, this.hostLabelY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal("PORT"), contentX, this.portLabelY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal("USERNAME / PASSWORD"), contentX, this.credentialsLabelY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal("TYPE"), contentX, this.typeLabelY, COLOR_LABEL, true);
 
         drawFieldChrome(context, this.hostField);
         drawFieldChrome(context, this.portField);
         drawFieldChrome(context, this.usernameField);
         drawFieldChrome(context, this.passwordField);
 
-        this.hostField.render(context, mouseX, mouseY, delta);
-        this.portField.render(context, mouseX, mouseY, delta);
-        this.usernameField.render(context, mouseX, mouseY, delta);
-        this.passwordField.render(context, mouseX, mouseY, delta);
+        this.hostField.extractRenderState(context, mouseX, mouseY, delta);
+        this.portField.extractRenderState(context, mouseX, mouseY, delta);
+        this.usernameField.extractRenderState(context, mouseX, mouseY, delta);
+        this.passwordField.extractRenderState(context, mouseX, mouseY, delta);
 
-        this.profileButton.render(context, mouseX, mouseY, delta);
-        this.newProfileButton.render(context, mouseX, mouseY, delta);
-        this.typeButton.render(context, mouseX, mouseY, delta);
-        this.applyButton.render(context, mouseX, mouseY, delta);
-        this.closeButton.render(context, mouseX, mouseY, delta);
-        this.resetButton.render(context, mouseX, mouseY, delta);
+        this.profileButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.newProfileButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.typeButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.applyButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.closeButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.resetButton.extractRenderState(context, mouseX, mouseY, delta);
 
         context.fill(contentX, this.statusSeparatorY, contentX + contentWidth, this.statusSeparatorY + 2, COLOR_BORDER);
         context.fill(contentX, this.actionSeparatorY, contentX + contentWidth, this.actionSeparatorY + 2, COLOR_BORDER);
@@ -341,7 +341,7 @@ public final class ProxyConfigScreen extends Screen {
         renderStoredProfilesList(context, mouseX, mouseY);
 
         if (!this.localError.isBlank()) {
-            context.drawString(
+            context.text(
                 this.font,
                 Component.literal(this.localError),
                 contentX,
@@ -371,7 +371,6 @@ public final class ProxyConfigScreen extends Screen {
 
     private void newProfile() {
         this.localError = "";
-
         runtime().createProfileFromUi("", new ProxyConfig());
         loadFromRuntime();
     }
@@ -450,8 +449,7 @@ public final class ProxyConfigScreen extends Screen {
     }
 
     private Component profileButtonText() {
-        ProxyRuntime runtime = runtime();
-        return Component.literal("ACTIVE: " + runtime.getActiveProfileName());
+        return Component.literal("ACTIVE: " + runtime().getActiveProfileName());
     }
 
     private Component typeButtonText() {
@@ -475,7 +473,7 @@ public final class ProxyConfigScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(net.minecraft.client.gui.components.events.MouseButtonEvent click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         if (click.button() == 0 && isInListBounds(click.x(), click.y())) {
             List<String> profiles = runtime().getProfileNames();
             int visibleStart = this.profileListScroll;
@@ -548,14 +546,14 @@ public final class ProxyConfigScreen extends Screen {
         String latencyText = latencyMs >= 0 ? "LATENCY: " + latencyMs + "ms" : "LATENCY: —";
         String ipText = runtime.getExternalIp() == null || runtime.getExternalIp().isBlank() ? "IP: —" : "IP: " + runtime.getExternalIp();
 
-        context.drawString(this.font, Component.literal(statusText), contentX, this.statusLineY, statusColor, true);
-        context.drawString(this.font, Component.literal(ipText), contentX, this.ipLineY, COLOR_LABEL, true);
-        context.drawString(this.font, Component.literal(latencyText), contentX, this.latencyLineY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal(statusText), contentX, this.statusLineY, statusColor, true);
+        context.text(this.font, Component.literal(ipText), contentX, this.ipLineY, COLOR_LABEL, true);
+        context.text(this.font, Component.literal(latencyText), contentX, this.latencyLineY, COLOR_LABEL, true);
     }
 
     private void renderStoredProfilesList(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int titleY = this.panelY + 14;
-        context.drawCenteredString(
+        context.centeredText(
             this.font,
             Component.literal("STORED PROXIES"),
             this.rightPanelX + RIGHT_PANEL_WIDTH / 2,
@@ -568,7 +566,7 @@ public final class ProxyConfigScreen extends Screen {
         this.profileListScroll = clampScroll(this.profileListScroll, profiles);
 
         if (profiles.isEmpty()) {
-            context.drawCenteredString(
+            context.centeredText(
                 this.font,
                 Component.literal("No profiles saved"),
                 this.rightPanelX + RIGHT_PANEL_WIDTH / 2,
@@ -601,7 +599,7 @@ public final class ProxyConfigScreen extends Screen {
                 context.fill(listX, rowY, listX + listWidth, rowY + LIST_ROW_HEIGHT, 0x22BC5CC7);
             }
 
-            context.drawString(this.font, Component.literal(profiles.get(profileIndex)), listX + 6, rowY + 6, COLOR_LABEL, true);
+            context.text(this.font, Component.literal(profiles.get(profileIndex)), listX + 6, rowY + 6, COLOR_LABEL, true);
 
             int dotColor;
             if (profileIndex != activeIndex) {
@@ -632,7 +630,7 @@ public final class ProxyConfigScreen extends Screen {
                 int xColor = deleteHovered ? 0xFFFFFFFF : 0xFFAA55BB;
                 int xCenterX = deleteBtnX + DELETE_BUTTON_SIZE / 2;
                 int xCenterY = deleteBtnY + (DELETE_BUTTON_SIZE - this.font.lineHeight) / 2;
-                context.drawCenteredString(this.font, Component.literal("x"), xCenterX, xCenterY, xColor);
+                context.centeredText(this.font, Component.literal("x"), xCenterX, xCenterY, xColor);
             }
         }
         context.disableScissor();
@@ -695,7 +693,7 @@ public final class ProxyConfigScreen extends Screen {
         }
 
         @Override
-        protected void renderWidget(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        protected void extractContents(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
             int backgroundColor = this.activeAccent
                 ? 0xFF1A0A2A
                 : (this.isHovered() ? 0xFF1A1A2E : 0xFF0F0F18);
@@ -714,7 +712,7 @@ public final class ProxyConfigScreen extends Screen {
             int textColor = this.active ? COLOR_TITLE : 0xFF666666;
             Minecraft client = Minecraft.getInstance();
             if (client != null && client.font != null) {
-                context.drawCenteredString(
+                context.centeredText(
                     client.font,
                     this.getMessage(),
                     x + this.width / 2,
@@ -758,11 +756,11 @@ public final class ProxyConfigScreen extends Screen {
         }
 
         @Override
-        public void renderWidget(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        public void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
             int verticalOffset = (this.getHeight() - this.textRenderer.lineHeight) / 2;
             int originalY = this.getY();
             this.setY(originalY + verticalOffset);
-            super.renderWidget(context, mouseX, mouseY, delta);
+            super.extractWidgetRenderState(context, mouseX, mouseY, delta);
             this.setY(originalY);
         }
     }
