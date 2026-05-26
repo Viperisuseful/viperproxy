@@ -29,9 +29,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.network.NetworkSide;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.PacketFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -281,12 +281,12 @@ public final class ProxyRuntime {
         return this.latencyMs;
     }
 
-    public Text getMultiplayerButtonText() {
+    public Component getMultiplayerButtonText() {
         return switch (this.status) {
-            case CONNECTED -> Text.literal("Viper Proxy: Connected").formatted(Formatting.GREEN);
-            case CONNECTING -> Text.literal("Viper Proxy: Connecting...").formatted(Formatting.YELLOW);
-            case DISABLED -> Text.literal("Viper Proxy: Disabled").formatted(Formatting.GRAY);
-            case ERROR -> Text.literal("Viper Proxy: ERROR").formatted(Formatting.RED);
+            case CONNECTED -> Component.literal("Viper Proxy: Connected").withStyle(ChatFormatting.GREEN);
+            case CONNECTING -> Component.literal("Viper Proxy: Connecting...").withStyle(ChatFormatting.YELLOW);
+            case DISABLED -> Component.literal("Viper Proxy: Disabled").withStyle(ChatFormatting.GRAY);
+            case ERROR -> Component.literal("Viper Proxy: ERROR").withStyle(ChatFormatting.RED);
         };
     }
 
@@ -310,8 +310,8 @@ public final class ProxyRuntime {
             + detail.summarize();
     }
 
-    public void injectProxyHandlers(ChannelPipeline pipeline, NetworkSide side, boolean local) {
-        if (local || side != NetworkSide.CLIENTBOUND) {
+    public void injectProxyHandlers(ChannelPipeline pipeline, PacketFlow side, boolean local) {
+        if (local || side != PacketFlow.CLIENTBOUND) {
             return;
         }
 

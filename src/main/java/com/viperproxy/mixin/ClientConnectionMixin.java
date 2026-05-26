@@ -3,8 +3,8 @@ package com.viperproxy.mixin;
 import com.viperproxy.ProxyRuntimeHolder;
 import com.viperproxy.proxy.ProxyRuntime;
 import io.netty.channel.ChannelPipeline;
-import net.minecraft.network.NetworkSide;
-import net.minecraft.network.handler.PacketSizeLogger;
+import net.minecraft.network.BandwidthDebugMonitor;
+import net.minecraft.network.protocol.PacketFlow;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,22 +13,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(net.minecraft.network.ClientConnection.class)
+@Mixin(net.minecraft.network.Connection.class)
 public abstract class ClientConnectionMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("ViperProxy");
 
     @Inject(
-        method = "addHandlers(Lio/netty/channel/ChannelPipeline;Lnet/minecraft/network/NetworkSide;ZLnet/minecraft/network/handler/PacketSizeLogger;)V",
+        method = "addHandlers(Lio/netty/channel/ChannelPipeline;Lnet/minecraft/network/protocol/PacketFlow;ZLnet/minecraft/network/BandwidthDebugMonitor;)V",
         at = @At("HEAD")
     )
     private static void viperproxy$injectProxyHandlers(
         ChannelPipeline pipeline,
-        NetworkSide side,
+        PacketFlow side,
         boolean local,
-        @Nullable PacketSizeLogger packetSizeLogger,
+        @Nullable BandwidthDebugMonitor bandwidthDebugMonitor,
         CallbackInfo ci
     ) {
-        if (local || side != NetworkSide.CLIENTBOUND) {
+        if (local || side != PacketFlow.CLIENTBOUND) {
             return;
         }
 

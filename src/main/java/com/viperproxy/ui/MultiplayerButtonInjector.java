@@ -4,8 +4,8 @@ import com.viperproxy.ProxyRuntimeHolder;
 import com.viperproxy.proxy.ProxyRuntime;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 
 public final class MultiplayerButtonInjector {
     private static boolean registered;
@@ -19,7 +19,7 @@ public final class MultiplayerButtonInjector {
         }
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof MultiplayerScreen)) {
+            if (!(screen instanceof JoinMultiplayerScreen)) {
                 return;
             }
 
@@ -28,18 +28,19 @@ public final class MultiplayerButtonInjector {
             int x = scaledWidth - buttonWidth - 8;
             int y = 8;
 
-                ProxyRuntime runtime = ProxyRuntimeHolder.getRequiredRuntime();
+            ProxyRuntime runtime = ProxyRuntimeHolder.getRequiredRuntime();
 
-            ButtonWidget button = ButtonWidget.builder(
+            Button button = Button.builder(
                     runtime.getMultiplayerButtonText(),
                     clicked -> client.setScreen(new ProxyConfigScreen(screen))
                 )
-                .dimensions(x, y, buttonWidth, buttonHeight)
+                .pos(x, y)
+                .size(buttonWidth, buttonHeight)
                 .build();
 
-            Screens.getButtons(screen).add(button);
+            Screens.getWidgets(screen).add(button);
 
-            ScreenEvents.afterRender(screen).register((current, drawContext, mouseX, mouseY, tickDelta) -> {
+            ScreenEvents.afterExtract(screen).register((current, drawContext, mouseX, mouseY, tickDelta) -> {
                 button.setMessage(runtime.getMultiplayerButtonText());
             });
         });

@@ -5,7 +5,7 @@ import io.netty.handler.proxy.ProxyHandler;
 import io.netty.handler.proxy.Socks5ProxyHandler;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public enum ProxyType {
     SOCKS5("SOCKS5"),
@@ -18,8 +18,8 @@ public enum ProxyType {
         this.label = label;
     }
 
-    public Text asText() {
-        return Text.literal(this.label);
+    public Component asText() {
+        return Component.literal(this.label);
     }
 
     public String label() {

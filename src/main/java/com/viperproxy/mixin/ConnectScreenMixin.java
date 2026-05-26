@@ -2,14 +2,14 @@ package com.viperproxy.mixin;
 
 import com.viperproxy.ProxyRuntimeHolder;
 import com.viperproxy.proxy.ProxyRuntime;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.DisconnectedScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.network.CookieStorage;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.ConnectScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.TransferState;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,18 +22,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ConnectScreenMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("ViperProxy");
 
+    // NOTE: If TransferState doesn't exist in MC 26.1, check the 6th parameter type of
+    // ConnectScreen.startConnecting from a decompiled jar and update the import + descriptor.
     @Inject(
-        method = "connect(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/network/ServerAddress;Lnet/minecraft/client/network/ServerInfo;ZLnet/minecraft/client/network/CookieStorage;)V",
+        method = "startConnecting(Lnet/minecraft/client/gui/screens/Screen;Lnet/minecraft/client/Minecraft;Lnet/minecraft/client/multiplayer/resolver/ServerAddress;Lnet/minecraft/client/multiplayer/ServerData;ZLnet/minecraft/client/multiplayer/TransferState;)V",
         at = @At("HEAD"),
         cancellable = true
     )
     private static void viperproxy$enforceKillSwitch(
         Screen screen,
-        MinecraftClient client,
+        Minecraft client,
         ServerAddress address,
-        ServerInfo info,
+        ServerData info,
         boolean quickPlay,
-        @Nullable CookieStorage cookieStorage,
+        @Nullable TransferState transferState,
         CallbackInfo ci
     ) {
         ProxyRuntime runtime = ProxyRuntimeHolder.getRequiredRuntime();
@@ -50,8 +52,8 @@ public abstract class ConnectScreenMixin {
 
         client.setScreen(new DisconnectedScreen(
             screen,
-            Text.literal("Viper Proxy"),
-            Text.literal(runtime.getKillSwitchReason())
+            Component.literal("Viper Proxy"),
+            Component.literal(runtime.getKillSwitchReason())
         ));
 
         ci.cancel();
