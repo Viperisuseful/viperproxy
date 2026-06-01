@@ -32,7 +32,7 @@ public final class MultiplayerButtonInjector {
 
             Button button = Button.builder(
                     runtime.getMultiplayerButtonText(),
-                    clicked -> client.setScreen(new ProxyConfigScreen(screen))
+                    clicked -> client.setScreenAndShow(new ProxyConfigScreen(screen))
                 )
                 .pos(x, y)
                 .size(buttonWidth, buttonHeight)

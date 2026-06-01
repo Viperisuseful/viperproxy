@@ -50,7 +50,7 @@ public abstract class ConnectScreenMixin {
             runtime.getStatusDetail()
         );
 
-        client.setScreen(new DisconnectedScreen(
+        client.setScreenAndShow(new DisconnectedScreen(
             screen,
             Component.literal("Viper Proxy"),
             Component.literal(runtime.getKillSwitchReason())
