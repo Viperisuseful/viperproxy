@@ -19,7 +19,7 @@ You can save multiple proxy profiles and switch between them from the config scr
 Before downloading, please note:
 
 - This mod is client-side only, so **do not install it on a server**.
-- It requires **Minecraft 26.2**, **Fabric Loader 0.19.3+**, **Fabric API 0.153.0+26.2**, and **Java 25+**.
+- It requires **Minecraft 26.3-snapshot-1**, **Fabric Loader 0.19.3+**, **Fabric API 0.153.1+26.3**, and **Java 25+**.
 - The kill switch is always active. If your proxy is not connected, you will not be able to join any server.
 
 
