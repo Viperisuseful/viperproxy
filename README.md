@@ -19,8 +19,18 @@ You can save multiple proxy profiles and switch between them from the config scr
 Before downloading, please note:
 
 - This mod is client-side only — **do not install it on a server**.
-- It requires **Fabric Loader 0.18.1+**, **Fabric API**, and **Java 21**.
+- It requires **Minecraft 1.21.11**, **Fabric Loader 0.18.1+**, **Fabric API**, and **Java 21**.
 - The kill switch is always active. If your proxy is not connected, you will not be able to join any server.
+
+## Version branches
+
+The default `master` branch tracks Minecraft 1.21.11, the mod's main and most-used release line.
+
+| Minecraft | Branch |
+| --- | --- |
+| 1.21.11 | `master` |
+| 26.1.2 | [`codex/mc-26.1.2-hotfix`](https://github.com/Viperisuseful/viperproxy/tree/codex/mc-26.1.2-hotfix) |
+| 26.2 | [`codex/mc-26.2-release`](https://github.com/Viperisuseful/viperproxy/tree/codex/mc-26.2-release) |
 
 
 <details>
