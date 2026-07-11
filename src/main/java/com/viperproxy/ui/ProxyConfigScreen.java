@@ -22,31 +22,46 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 
 public final class ProxyConfigScreen extends Screen {
-    private static final int LEFT_PANEL_WIDTH = 380;
-    private static final int RIGHT_PANEL_WIDTH = 220;
-    private static final int PANEL_GAP = 8;
-    private static final int PADDING = 10;
-    private static final int ROW_HEIGHT = 20;
-    private static final int LIST_ROW_HEIGHT = 20;
-    private static final int DELETE_BUTTON_SIZE = 12;
+    private static final int PANEL_MAX_WIDTH = 700;
+    private static final int PANEL_MAX_HEIGHT = 360;
+    private static final int HEADER_HEIGHT = 36;
+    private static final int FOOTER_HEIGHT = 36;
+    private static final int FIELD_HEIGHT = 22;
+    private static final int BUTTON_HEIGHT = 22;
+    private static final int ROW_HEIGHT = 26;
+    private static final int ROW_GAP = 3;
 
-    private static final Identifier LOGO_TEXTURE = Identifier.fromNamespaceAndPath("viperproxy", "textures/gui/logo.png");
-    private static final int LOGO_DISPLAY_SIZE = 64;
-    private static final int LOGO_TEXTURE_SIZE = 2000;
+    private static final Identifier LOGO = Identifier.fromNamespaceAndPath("viperproxy", "textures/gui/logo.png");
+    private static final int LOGO_TEX_SIZE = 2000;
+    private static final int LOGO_X = 59;
+    private static final int LOGO_Y = 603;
+    private static final int LOGO_W = 1483;
+    private static final int LOGO_H = 395;
 
-    private static final int COLOR_SCREEN_OVERLAY = 0xCC000000;
-    private static final int COLOR_PANEL_BG = 0xDD0A0A0F;
-    private static final int COLOR_RIGHT_PANEL_BG = 0xDD050508;
-    private static final int COLOR_BORDER = 0xFF2A0A3A;
-    private static final int COLOR_GLOW = 0x44BC5CC7;
-    private static final int COLOR_LABEL = 0xFFAAAAAA;
-    private static final int COLOR_TITLE = 0xFFFFFFFF;
-    private static final int COLOR_STATUS_OK = 0xFF44FF44;
-    private static final int COLOR_STATUS_ERROR = 0xFFFF4444;
-    private static final int COLOR_STATUS_CONNECTING = 0xFFFFAA00;
-    private static final int COLOR_STATUS_DISABLED = 0xFF888888;
+    private static final int OVERLAY = 0xB9000000;
+    private static final int PANEL = 0xF21B1C20;
+    private static final int SIDEBAR = 0xF316171B;
+    private static final int SURFACE = 0xFF232429;
+    private static final int SURFACE_HOVER = 0xFF2B2C32;
+    private static final int SURFACE_SELECTED = 0xFF302126;
+    private static final int FIELD = 0xFF1B1C21;
+    private static final int BORDER = 0xFF36373E;
+    private static final int BORDER_SOFT = 0xFF2D2E34;
+    private static final int TEXT = 0xFFF1F1F2;
+    private static final int MUTED = 0xFFAAAAB0;
+    private static final int DIM = 0xFF75767E;
+    private static final int ACCENT = 0xFFE84F5B;
+    private static final int ACCENT_DARK = 0xFF32171C;
+    private static final int SUCCESS = 0xFF78E35A;
+    private static final int WARNING = 0xFFFFC857;
+    private static final int ERROR = 0xFFFF6B70;
+    private static final int DISABLED = 0xFF7B858F;
 
     private final Screen parent;
+    private Page page = Page.CONNECTION;
+    private ProxyType selectedType = ProxyType.SOCKS5;
+    private String localError = "";
+    private int profileScroll;
 
     private EditBox hostField;
     private EditBox portField;
@@ -54,397 +69,392 @@ public final class ProxyConfigScreen extends Screen {
     private EditBox passwordField;
     private EditBox profileNameField;
 
-    private StyledButtonWidget renameProfileButton;
-    private StyledButtonWidget newProfileButton;
-    private StyledButtonWidget typeButton;
-    private StyledButtonWidget applyButton;
-    private StyledButtonWidget closeButton;
-    private StyledButtonWidget resetButton;
+    private FlatButton connectionTab;
+    private FlatButton authTab;
+    private FlatButton profilesTab;
+    private FlatButton socks5Button;
+    private FlatButton httpButton;
+    private FlatButton httpsButton;
+    private FlatButton saveNameButton;
+    private FlatButton newProfileButton;
+    private FlatButton deleteProfileButton;
+    private FlatButton closeButton;
+    private FlatButton resetButton;
+    private FlatButton applyButton;
 
-    private ProxyType selectedType = ProxyType.SOCKS5;
-    private String localError = "";
-    private int profileListScroll;
-
-    private int leftPanelX;
-    private int rightPanelX;
+    private int panelX;
     private int panelY;
+    private int panelRight;
+    private int panelBottom;
+    private int panelWidth;
     private int panelHeight;
-
-    private int titleY;
-    private int titleSeparatorY;
-    private int profileLabelY;
-    private int profileRowY;
-    private int hostLabelY;
-    private int hostFieldY;
-    private int portLabelY;
-    private int portFieldY;
-    private int credentialsLabelY;
-    private int credentialsFieldY;
-    private int typeLabelY;
-    private int typeButtonY;
-    private int statusSeparatorY;
-    private int statusLineY;
-    private int ipLineY;
-    private int latencyLineY;
-    private int actionSeparatorY;
-    private int applyButtonY;
-    private int bottomButtonsY;
-
-    private int listStartY;
-    private int listEndY;
+    private int sidebarWidth;
+    private int contentX;
+    private int contentRight;
+    private int contentTop;
+    private int contentBottom;
+    private int profileListY;
+    private int profileListBottom;
 
     public ProxyConfigScreen(Screen parent) {
-        super(Component.literal("Viper Proxy Configuration"));
+        super(Component.literal("Viper Proxy"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
-        int totalWidth = LEFT_PANEL_WIDTH + PANEL_GAP + RIGHT_PANEL_WIDTH;
-        int lineHeight = this.font.lineHeight;
-        this.panelHeight = computePanelHeight(lineHeight);
-
-        this.leftPanelX = this.width / 2 - totalWidth / 2;
-        this.rightPanelX = this.leftPanelX + LEFT_PANEL_WIDTH + PANEL_GAP;
-        this.panelY = this.height / 2 - this.panelHeight / 2;
-
-        layoutVerticalFlow(lineHeight);
-
-        int contentX = this.leftPanelX + PADDING;
-        int contentRight = this.leftPanelX + LEFT_PANEL_WIDTH - PADDING;
-        int contentWidth = contentRight - contentX;
-
+        layout();
         ProxyRuntime runtime = runtime();
         ProxyConfig config = runtime.getActiveConfigCopy().normalized();
         this.selectedType = config.type;
 
-        this.hostField = new CenteredTextFieldWidget(this.font, contentX, this.hostFieldY, contentWidth, ROW_HEIGHT, Component.literal("Host"));
-        this.hostField.setMaxLength(255);
-        this.hostField.setValue(config.host);
-        this.hostField.setBordered(false);
-        configureSuggestionBehavior(this.hostField, "Host / IP");
+        int contentWidth = this.contentRight - this.contentX;
+        int hostCardY = this.contentTop + 30;
+        int hostFieldY = hostCardY + 32;
+        int portWidth = Math.min(86, Math.max(62, contentWidth / 4));
+        this.hostField = field(this.contentX + 10, hostFieldY, contentWidth - portWidth - 26, 255, config.host, "Proxy hostname or IP");
+        this.portField = field(this.contentRight - portWidth - 10, hostFieldY, portWidth, 5,
+            config.enabled || !config.host.isBlank() ? Integer.toString(config.port) : "", "Port");
 
-        this.portField = new CenteredTextFieldWidget(this.font, contentX, this.portFieldY, contentWidth, ROW_HEIGHT, Component.literal("Port"));
-        this.portField.setMaxLength(5);
-        this.portField.setValue(Integer.toString(config.port));
-        this.portField.setBordered(false);
-        configureSuggestionBehavior(this.portField, "Port");
+        int protocolY = hostCardY + 70;
+        int segmentGap = 6;
+        int segmentWidth = (contentWidth - 20 - segmentGap * 2) / 3;
+        this.socks5Button = button(this.contentX + 10, protocolY + 22, segmentWidth, BUTTON_HEIGHT, "SOCKS5", () -> selectType(ProxyType.SOCKS5), Tone.SEGMENT);
+        this.httpButton = button(this.contentX + 10 + segmentWidth + segmentGap, protocolY + 22, segmentWidth, BUTTON_HEIGHT, "HTTP", () -> selectType(ProxyType.HTTP), Tone.SEGMENT);
+        this.httpsButton = button(this.contentRight - 10 - segmentWidth, protocolY + 22, segmentWidth, BUTTON_HEIGHT, "HTTPS", () -> selectType(ProxyType.HTTPS), Tone.SEGMENT);
 
-        int sideBySideWidth = (contentWidth - 6) / 2;
-        this.usernameField = new CenteredTextFieldWidget(this.font, contentX, this.credentialsFieldY, sideBySideWidth, ROW_HEIGHT, Component.literal("Username"));
-        this.usernameField.setMaxLength(128);
-        this.usernameField.setValue(config.username);
-        this.usernameField.setBordered(false);
-        configureSuggestionBehavior(this.usernameField, "Username (optional)");
-
-        this.passwordField = new CenteredTextFieldWidget(
-            this.font,
-            contentX + sideBySideWidth + 6,
-            this.credentialsFieldY,
-            sideBySideWidth,
-            ROW_HEIGHT,
-            Component.literal("Password")
-        );
-        this.passwordField.setMaxLength(128);
-        this.passwordField.setValue(config.password);
-        this.passwordField.setBordered(false);
+        int authCardY = this.contentTop + 30;
+        int credentialGap = 8;
+        int credentialWidth = (contentWidth - 28) / 2;
+        this.usernameField = field(this.contentX + 10, authCardY + 32, credentialWidth, 128, config.username, "Optional username");
+        this.passwordField = field(this.contentRight - 10 - credentialWidth, authCardY + 32, credentialWidth, 128, config.password, "Optional password");
         this.passwordField.addFormatter((text, firstCharacterIndex) ->
-            FormattedCharSequence.forward("•".repeat(text.length()), Style.EMPTY)
-        );
-        configureSuggestionBehavior(this.passwordField, "Password (optional)");
+            FormattedCharSequence.forward("•".repeat(text.length()), Style.EMPTY));
 
-        this.addRenderableWidget(this.hostField);
-        this.addRenderableWidget(this.portField);
-        this.addRenderableWidget(this.usernameField);
-        this.addRenderableWidget(this.passwordField);
+        int profileCardY = this.contentTop + 30;
+        int saveWidth = 74;
+        this.profileNameField = field(this.contentX + 10, profileCardY + 24, contentWidth - saveWidth - 26, 48,
+            runtime.getActiveProfileName(), "Profile name");
+        this.saveNameButton = button(this.contentRight - saveWidth - 10, profileCardY + 24, saveWidth, FIELD_HEIGHT,
+            "RENAME", this::renameProfile, Tone.SECONDARY);
 
-        int profileNameWidth = (int) Math.floor(contentWidth * 0.46);
-        int renameProfileButtonWidth = (int) Math.floor(contentWidth * 0.22);
-        int newProfileButtonWidth = contentWidth - profileNameWidth - renameProfileButtonWidth - 12;
+        this.profileListY = profileCardY + 58;
+        int profileActionsY = this.contentBottom - BUTTON_HEIGHT;
+        this.profileListBottom = profileActionsY - 7;
+        int halfAction = (contentWidth - 6) / 2;
+        this.newProfileButton = button(this.contentX, profileActionsY, halfAction, BUTTON_HEIGHT, "NEW PROFILE", this::newProfile, Tone.SECONDARY);
+        this.deleteProfileButton = button(this.contentRight - halfAction, profileActionsY, halfAction, BUTTON_HEIGHT, "DELETE ACTIVE", this::deleteProfile, Tone.DANGER);
 
-        this.profileNameField = new CenteredTextFieldWidget(
-            this.font,
-            contentX,
-            this.profileRowY,
-            profileNameWidth,
-            ROW_HEIGHT,
-            Component.literal("Profile name")
-        );
-        this.profileNameField.setMaxLength(48);
-        this.profileNameField.setValue(runtime.getActiveProfileName());
-        this.profileNameField.setBordered(false);
-        configureSuggestionBehavior(this.profileNameField, "Profile name");
-        this.addRenderableWidget(this.profileNameField);
+        int navX = this.panelX + 10;
+        int navWidth = this.sidebarWidth - 20;
+        int navY = this.panelY + HEADER_HEIGHT + 14;
+        this.connectionTab = button(navX, navY, navWidth, 24, "CONNECTION", () -> setPage(Page.CONNECTION), Tone.NAV);
+        this.authTab = button(navX, navY + 30, navWidth, 24, "AUTHENTICATION", () -> setPage(Page.AUTHENTICATION), Tone.NAV);
+        this.profilesTab = button(navX, navY + 60, navWidth, 24, "PROFILES", () -> setPage(Page.PROFILES), Tone.NAV);
 
-        this.renameProfileButton = this.addRenderableWidget(
-            buildStyledButton(
-                contentX + profileNameWidth + 6,
-                this.profileRowY,
-                renameProfileButtonWidth,
-                ROW_HEIGHT,
-                Component.literal("SAVE NAME"),
-                this::renameProfile,
-                false
-            )
-        );
+        int footerY = this.panelBottom - FOOTER_HEIGHT + 7;
+        int primaryWidth = 112;
+        this.closeButton = button(this.contentX, footerY, 66, BUTTON_HEIGHT, "CLOSE", this::onClose, Tone.SECONDARY);
+        this.resetButton = button(this.contentX + 72, footerY, 76, BUTTON_HEIGHT, "RESET", this::resetForm, Tone.SECONDARY);
+        this.applyButton = button(this.contentRight - primaryWidth, footerY, primaryWidth, BUTTON_HEIGHT, "SAVE & TEST", this::applyConfig, Tone.PRIMARY);
 
-        this.newProfileButton = this.addRenderableWidget(
-            buildStyledButton(
-                contentX + profileNameWidth + renameProfileButtonWidth + 12,
-                this.profileRowY,
-                newProfileButtonWidth,
-                ROW_HEIGHT,
-                Component.literal("NEW PROFILE"),
-                this::newProfile,
-                false
-            )
-        );
-
-        this.typeButton = this.addRenderableWidget(
-            buildStyledButton(contentX, this.typeButtonY, contentWidth, ROW_HEIGHT, typeButtonText(), this::cycleProxyType, false)
-        );
-
-        this.applyButton = this.addRenderableWidget(
-            buildStyledButton(contentX, this.applyButtonY, contentWidth, ROW_HEIGHT, Component.literal("APPLY"), this::applyConfig, true)
-        );
-
-        int bottomButtonWidth = (contentWidth - 6) / 2;
-        this.closeButton = this.addRenderableWidget(
-            buildStyledButton(contentX, this.bottomButtonsY, bottomButtonWidth, ROW_HEIGHT, Component.literal("CLOSE"), this::onClose, false)
-        );
-
-        this.resetButton = this.addRenderableWidget(
-            buildStyledButton(
-                contentX + bottomButtonWidth + 6,
-                this.bottomButtonsY,
-                bottomButtonWidth,
-                ROW_HEIGHT,
-                Component.literal("RESET"),
-                this::resetForm,
-                false
-            )
-        );
-
-        this.listStartY = this.panelY + 34;
-        this.listEndY = this.panelY + this.panelHeight - 10;
-
-        this.profileListScroll = clampScroll(this.profileListScroll, runtime.getProfileNames());
+        refreshControls();
+        setPage(this.page);
         this.setInitialFocus(this.hostField);
     }
 
-    private int computePanelHeight(int lineHeight) {
-        int currentY = 8;
-
-        currentY += LOGO_DISPLAY_SIZE + 8;
-        currentY += 2 + 8;
-        currentY += lineHeight + 2;
-        currentY += ROW_HEIGHT + 8;
-        currentY += lineHeight + 2;
-        currentY += ROW_HEIGHT + 8;
-        currentY += lineHeight + 2;
-        currentY += ROW_HEIGHT + 8;
-        currentY += lineHeight + 2;
-        currentY += ROW_HEIGHT + 8;
-        currentY += lineHeight + 2;
-        currentY += ROW_HEIGHT + 4;
-        currentY += 2 + 6;
-        currentY += lineHeight + 2;
-        currentY += lineHeight + 2;
-        currentY += lineHeight + 6;
-        currentY += 2 + 6;
-        currentY += ROW_HEIGHT + 4;
-        currentY += ROW_HEIGHT;
-
-        return currentY + 8;
+    private void layout() {
+        this.panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(470, this.width - 16));
+        this.panelWidth = Math.min(this.panelWidth, this.width - 4);
+        this.panelHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(238, this.height - 16));
+        this.panelHeight = Math.min(this.panelHeight, this.height - 4);
+        this.panelX = (this.width - this.panelWidth) / 2;
+        this.panelY = (this.height - this.panelHeight) / 2;
+        this.panelRight = this.panelX + this.panelWidth;
+        this.panelBottom = this.panelY + this.panelHeight;
+        this.sidebarWidth = Math.max(126, Math.min(154, this.panelWidth / 4));
+        this.contentX = this.panelX + this.sidebarWidth + 14;
+        this.contentRight = this.panelRight - 14;
+        this.contentTop = this.panelY + HEADER_HEIGHT + 10;
+        this.contentBottom = this.panelBottom - FOOTER_HEIGHT - 6;
     }
 
-    private void layoutVerticalFlow(int lineHeight) {
-        int currentY = this.panelY + 8;
+    private EditBox field(int x, int y, int width, int maxLength, String value, String placeholder) {
+        EditBox field = new CenteredEditBox(this.font, x, y, width, FIELD_HEIGHT, Component.literal(placeholder));
+        field.setMaxLength(maxLength);
+        field.setValue(value == null ? "" : value);
+        field.setBordered(false);
+        configureSuggestion(field, placeholder);
+        return this.addRenderableWidget(field);
+    }
 
-        this.titleY = currentY;
-        currentY += LOGO_DISPLAY_SIZE + 8;
-
-        this.titleSeparatorY = currentY;
-        currentY += 2 + 8;
-
-        this.profileLabelY = currentY;
-        currentY += lineHeight + 2;
-
-        this.profileRowY = currentY;
-        currentY += ROW_HEIGHT + 8;
-
-        this.hostLabelY = currentY;
-        currentY += lineHeight + 2;
-
-        this.hostFieldY = currentY;
-        currentY += ROW_HEIGHT + 8;
-
-        this.portLabelY = currentY;
-        currentY += lineHeight + 2;
-
-        this.portFieldY = currentY;
-        currentY += ROW_HEIGHT + 8;
-
-        this.credentialsLabelY = currentY;
-        currentY += lineHeight + 2;
-
-        this.credentialsFieldY = currentY;
-        currentY += ROW_HEIGHT + 8;
-
-        this.typeLabelY = currentY;
-        currentY += lineHeight + 2;
-
-        this.typeButtonY = currentY;
-        currentY += ROW_HEIGHT + 4;
-
-        this.statusSeparatorY = currentY;
-        currentY += 2 + 6;
-
-        this.statusLineY = currentY;
-        currentY += lineHeight + 2;
-
-        this.ipLineY = currentY;
-        currentY += lineHeight + 2;
-
-        this.latencyLineY = currentY;
-        currentY += lineHeight + 6;
-
-        this.actionSeparatorY = currentY;
-        currentY += 2 + 6;
-
-        this.applyButtonY = currentY;
-        currentY += ROW_HEIGHT + 4;
-
-        this.bottomButtonsY = currentY;
+    private FlatButton button(int x, int y, int width, int height, String text, Runnable action, Tone tone) {
+        return this.addRenderableWidget(new FlatButton(x, y, width, height, Component.literal(text), action, tone));
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-        // Render everything manually to control z-order (panels behind widgets).
-        int contentX = this.leftPanelX + PADDING;
-        int contentWidth = LEFT_PANEL_WIDTH - (PADDING * 2);
-        int panelBottom = this.panelY + this.panelHeight;
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        renderShell(graphics);
+        renderHeader(graphics);
+        renderSidebar(graphics);
+        renderPage(graphics, mouseX, mouseY);
+        renderVisibleWidgets(graphics, mouseX, mouseY, delta);
+    }
 
-        renderPanels(context);
+    private void renderShell(GuiGraphicsExtractor graphics) {
+        graphics.fill(0, 0, this.width, this.height, OVERLAY);
+        graphics.fill(this.panelX, this.panelY, this.panelRight, this.panelBottom, PANEL);
+        border(graphics, this.panelX, this.panelY, this.panelWidth, this.panelHeight, BORDER);
+        graphics.fill(this.panelX + 1, this.panelY + HEADER_HEIGHT, this.panelX + this.sidebarWidth, this.panelBottom - 1, SIDEBAR);
+        graphics.fill(this.panelX, this.panelY + HEADER_HEIGHT - 1, this.panelRight, this.panelY + HEADER_HEIGHT, BORDER);
+        graphics.fill(this.panelX + this.sidebarWidth, this.panelY + HEADER_HEIGHT, this.panelX + this.sidebarWidth + 1, this.panelBottom, BORDER);
+        graphics.fill(this.panelX + this.sidebarWidth, this.panelBottom - FOOTER_HEIGHT, this.panelRight, this.panelBottom - FOOTER_HEIGHT + 1, BORDER);
+    }
 
-        int logoX = this.leftPanelX + (LEFT_PANEL_WIDTH - LOGO_DISPLAY_SIZE) / 2;
-        context.blit(
-            RenderPipelines.GUI_TEXTURED,
-            LOGO_TEXTURE,
-            logoX, this.titleY,
-            0.0F, 0.0F,
-            LOGO_DISPLAY_SIZE, LOGO_DISPLAY_SIZE,
-            LOGO_TEXTURE_SIZE, LOGO_TEXTURE_SIZE
-        );
-        context.fill(this.leftPanelX + 8, this.titleSeparatorY, this.leftPanelX + LEFT_PANEL_WIDTH - 8, this.titleSeparatorY + 2, COLOR_BORDER);
+    private void renderHeader(GuiGraphicsExtractor graphics) {
+        int logoW = 68;
+        int logoH = 18;
+        int logoX = this.panelX + 12;
+        int logoY = this.panelY + 9;
+        graphics.fill(logoX - 3, logoY - 3, logoX + logoW + 3, logoY + logoH + 3, ACCENT);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_X, LOGO_Y,
+            logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX_SIZE, LOGO_TEX_SIZE);
 
-        context.text(this.font, Component.literal("PROFILE"), contentX, this.profileLabelY, COLOR_LABEL, true);
-        context.text(this.font, Component.literal("HOST"), contentX, this.hostLabelY, COLOR_LABEL, true);
-        context.text(this.font, Component.literal("PORT"), contentX, this.portLabelY, COLOR_LABEL, true);
-        context.text(this.font, Component.literal("USERNAME / PASSWORD"), contentX, this.credentialsLabelY, COLOR_LABEL, true);
-        context.text(this.font, Component.literal("TYPE"), contentX, this.typeLabelY, COLOR_LABEL, true);
+        ProxyStatus status = runtime().getStatus();
+        String label = switch (status) {
+            case CONNECTED -> "CONNECTED";
+            case CONNECTING -> "TESTING";
+            case ERROR -> "ROUTE ERROR";
+            case DISABLED -> "DISABLED";
+        };
+        int color = statusColor(status);
+        int chipW = Math.max(76, this.font.width(label) + 16);
+        int chipX = this.panelRight - chipW - 12;
+        int chipY = this.panelY + 8;
+        graphics.fill(chipX, chipY, chipX + chipW, chipY + 20, SURFACE);
+        border(graphics, chipX, chipY, chipW, 20, color);
+        graphics.centeredText(this.font, Component.literal(label), chipX + chipW / 2, chipY + 6, color);
+    }
 
-        drawFieldChrome(context, this.profileNameField);
-        drawFieldChrome(context, this.hostField);
-        drawFieldChrome(context, this.portField);
-        drawFieldChrome(context, this.usernameField);
-        drawFieldChrome(context, this.passwordField);
+    private void renderSidebar(GuiGraphicsExtractor graphics) {
+        graphics.text(this.font, Component.literal("SETTINGS"), this.panelX + 12, this.panelY + HEADER_HEIGHT + 3, DIM, false);
+        String active = fit(runtime().getActiveProfileName(), this.sidebarWidth - 24);
+        graphics.text(this.font, Component.literal(active), this.panelX + 12, this.panelBottom - 17, MUTED, false);
+    }
 
-        this.profileNameField.extractRenderState(context, mouseX, mouseY, delta);
-        this.hostField.extractRenderState(context, mouseX, mouseY, delta);
-        this.portField.extractRenderState(context, mouseX, mouseY, delta);
-        this.usernameField.extractRenderState(context, mouseX, mouseY, delta);
-        this.passwordField.extractRenderState(context, mouseX, mouseY, delta);
-
-        this.renameProfileButton.extractRenderState(context, mouseX, mouseY, delta);
-        this.newProfileButton.extractRenderState(context, mouseX, mouseY, delta);
-        this.typeButton.extractRenderState(context, mouseX, mouseY, delta);
-        this.applyButton.extractRenderState(context, mouseX, mouseY, delta);
-        this.closeButton.extractRenderState(context, mouseX, mouseY, delta);
-        this.resetButton.extractRenderState(context, mouseX, mouseY, delta);
-
-        context.fill(contentX, this.statusSeparatorY, contentX + contentWidth, this.statusSeparatorY + 2, COLOR_BORDER);
-        context.fill(contentX, this.actionSeparatorY, contentX + contentWidth, this.actionSeparatorY + 2, COLOR_BORDER);
-
-        renderStatusBlock(context, contentX);
-        renderStoredProfilesList(context, mouseX, mouseY);
-
+    private void renderPage(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        switch (this.page) {
+            case CONNECTION -> renderConnectionPage(graphics);
+            case AUTHENTICATION -> renderAuthenticationPage(graphics);
+            case PROFILES -> renderProfilesPage(graphics, mouseX, mouseY);
+        }
         if (!this.localError.isBlank()) {
-            context.text(
-                this.font,
-                Component.literal(this.localError),
-                contentX,
-                Math.min(panelBottom - 12 - this.font.lineHeight, this.latencyLineY + this.font.lineHeight + 2),
-                COLOR_STATUS_ERROR,
-                true
-            );
+            graphics.text(this.font, Component.literal(fit(this.localError, this.contentRight - this.contentX - 160)),
+                this.contentX + 154, this.panelBottom - 23, ERROR, false);
         }
+    }
+
+    private void renderPageTitle(GuiGraphicsExtractor graphics, String title, String subtitle) {
+        graphics.text(this.font, Component.literal(title), this.contentX, this.contentTop, TEXT, true);
+        graphics.text(this.font, Component.literal(fit(subtitle, this.contentRight - this.contentX)), this.contentX, this.contentTop + 13, MUTED, false);
+    }
+
+    private void renderConnectionPage(GuiGraphicsExtractor graphics) {
+        renderPageTitle(graphics, "Connection", "Choose the proxy endpoint and protocol used for Minecraft traffic.");
+        int cardY = this.contentTop + 30;
+        card(graphics, cardY, 64);
+        graphics.text(this.font, Component.literal("ENDPOINT"), this.contentX + 10, cardY + 8, DIM, false);
+        graphics.text(this.font, Component.literal("HOST / IP"), this.hostField.getX(), cardY + 19, MUTED, false);
+        graphics.text(this.font, Component.literal("PORT"), this.portField.getX(), cardY + 19, MUTED, false);
+        int protocolY = cardY + 70;
+        card(graphics, protocolY, 50);
+        graphics.text(this.font, Component.literal("PROTOCOL"), this.contentX + 10, protocolY + 8, DIM, false);
+    }
+
+    private void renderAuthenticationPage(GuiGraphicsExtractor graphics) {
+        renderPageTitle(graphics, "Authentication", "Credentials are optional and stored with the active profile.");
+        int cardY = this.contentTop + 30;
+        card(graphics, cardY, 64);
+        graphics.text(this.font, Component.literal("PROXY CREDENTIALS"), this.contentX + 10, cardY + 8, DIM, false);
+        graphics.text(this.font, Component.literal("USERNAME"), this.usernameField.getX(), cardY + 19, MUTED, false);
+        graphics.text(this.font, Component.literal("PASSWORD"), this.passwordField.getX(), cardY + 19, MUTED, false);
+    }
+
+    private void renderProfilesPage(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        renderPageTitle(graphics, "Profiles", "Create, rename, and switch between saved proxy configurations.");
+        int renameY = this.contentTop + 30;
+        card(graphics, renameY, 52);
+        graphics.text(this.font, Component.literal("ACTIVE PROFILE NAME"), this.contentX + 10, renameY + 8, DIM, false);
+
+        List<String> profiles = runtime().getProfileNames();
+        this.profileScroll = clampScroll(this.profileScroll, profiles);
+        int activeIndex = runtime().getActiveProfileIndex();
+        graphics.enableScissor(this.contentX, this.profileListY, this.contentRight, this.profileListBottom);
+        int visible = visibleRows();
+        for (int row = 0; row < visible; row++) {
+            int index = this.profileScroll + row;
+            if (index >= profiles.size()) break;
+            int y = this.profileListY + row * (ROW_HEIGHT + ROW_GAP);
+            boolean selected = index == activeIndex;
+            boolean hovered = mouseX >= this.contentX && mouseX <= this.contentRight && mouseY >= y && mouseY < y + ROW_HEIGHT;
+            graphics.fill(this.contentX, y, this.contentRight, y + ROW_HEIGHT,
+                selected ? SURFACE_SELECTED : (hovered ? SURFACE_HOVER : SURFACE));
+            if (selected) graphics.fill(this.contentX, y, this.contentX + 2, y + ROW_HEIGHT, ACCENT);
+            graphics.text(this.font, Component.literal(fit(profiles.get(index), this.contentRight - this.contentX - 70)),
+                this.contentX + 9, y + 8, selected ? TEXT : MUTED, false);
+            if (selected) {
+                graphics.text(this.font, Component.literal("ACTIVE"), this.contentRight - 43, y + 8, ACCENT, false);
+            }
+        }
+        graphics.disableScissor();
+    }
+
+    private void card(GuiGraphicsExtractor graphics, int y, int height) {
+        graphics.fill(this.contentX, y, this.contentRight, y + height, SURFACE);
+        border(graphics, this.contentX, y, this.contentRight - this.contentX, height, BORDER_SOFT);
+    }
+
+    private void renderVisibleWidgets(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        if (this.page == Page.CONNECTION) {
+            drawField(graphics, this.hostField, mouseX, mouseY, delta);
+            drawField(graphics, this.portField, mouseX, mouseY, delta);
+            this.socks5Button.extractRenderState(graphics, mouseX, mouseY, delta);
+            this.httpButton.extractRenderState(graphics, mouseX, mouseY, delta);
+            this.httpsButton.extractRenderState(graphics, mouseX, mouseY, delta);
+        } else if (this.page == Page.AUTHENTICATION) {
+            drawField(graphics, this.usernameField, mouseX, mouseY, delta);
+            drawField(graphics, this.passwordField, mouseX, mouseY, delta);
+        } else {
+            drawField(graphics, this.profileNameField, mouseX, mouseY, delta);
+            this.saveNameButton.extractRenderState(graphics, mouseX, mouseY, delta);
+            this.newProfileButton.extractRenderState(graphics, mouseX, mouseY, delta);
+            this.deleteProfileButton.extractRenderState(graphics, mouseX, mouseY, delta);
+        }
+        this.connectionTab.extractRenderState(graphics, mouseX, mouseY, delta);
+        this.authTab.extractRenderState(graphics, mouseX, mouseY, delta);
+        this.profilesTab.extractRenderState(graphics, mouseX, mouseY, delta);
+        this.closeButton.extractRenderState(graphics, mouseX, mouseY, delta);
+        this.resetButton.extractRenderState(graphics, mouseX, mouseY, delta);
+        this.applyButton.extractRenderState(graphics, mouseX, mouseY, delta);
+    }
+
+    private void drawField(GuiGraphicsExtractor graphics, EditBox field, int mouseX, int mouseY, float delta) {
+        graphics.fill(field.getX(), field.getY(), field.getX() + field.getWidth(), field.getY() + field.getHeight(), FIELD);
+        border(graphics, field.getX(), field.getY(), field.getWidth(), field.getHeight(), field.isFocused() ? ACCENT : BORDER);
+        field.extractRenderState(graphics, mouseX, mouseY, delta);
+    }
+
+    private void setPage(Page page) {
+        this.page = page;
+        boolean connection = page == Page.CONNECTION;
+        boolean auth = page == Page.AUTHENTICATION;
+        boolean profiles = page == Page.PROFILES;
+        this.hostField.visible = connection;
+        this.portField.visible = connection;
+        this.socks5Button.visible = connection;
+        this.httpButton.visible = connection;
+        this.httpsButton.visible = connection;
+        this.usernameField.visible = auth;
+        this.passwordField.visible = auth;
+        this.profileNameField.visible = profiles;
+        this.saveNameButton.visible = profiles;
+        this.newProfileButton.visible = profiles;
+        this.deleteProfileButton.visible = profiles;
+        this.connectionTab.setSelected(connection);
+        this.authTab.setSelected(auth);
+        this.profilesTab.setSelected(profiles);
     }
 
     @Override
-    public void onClose() {
-        if (this.minecraft != null) {
-            this.minecraft.setScreenAndShow(this.parent);
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
+        if (this.page == Page.PROFILES && click.button() == 0 && insideProfileList(click.x(), click.y())) {
+            int row = (int) ((click.y() - this.profileListY) / (ROW_HEIGHT + ROW_GAP));
+            int offset = (int) ((click.y() - this.profileListY) % (ROW_HEIGHT + ROW_GAP));
+            int index = this.profileScroll + row;
+            List<String> profiles = runtime().getProfileNames();
+            if (offset < ROW_HEIGHT && index >= 0 && index < profiles.size()) {
+                runtime().selectActiveProfile(index);
+                loadFromRuntime();
+                return true;
+            }
         }
+        return super.mouseClicked(click, doubleClick);
     }
 
-    private ProxyRuntime runtime() {
-        return ProxyRuntimeHolder.getRequiredRuntime();
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (this.page == Page.PROFILES && insideProfileList(mouseX, mouseY)) {
+            int max = maxScroll(runtime().getProfileNames());
+            if (verticalAmount < 0) this.profileScroll = Math.min(max, this.profileScroll + 1);
+            if (verticalAmount > 0) this.profileScroll = Math.max(0, this.profileScroll - 1);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    private boolean insideProfileList(double x, double y) {
+        return x >= this.contentX && x <= this.contentRight && y >= this.profileListY && y < this.profileListBottom;
+    }
+
+    private int visibleRows() {
+        return Math.max(1, (this.profileListBottom - this.profileListY) / (ROW_HEIGHT + ROW_GAP));
+    }
+
+    private int maxScroll(List<String> profiles) {
+        return Math.max(0, profiles.size() - visibleRows());
+    }
+
+    private int clampScroll(int scroll, List<String> profiles) {
+        return Math.max(0, Math.min(scroll, maxScroll(profiles)));
     }
 
     private void newProfile() {
-        this.localError = "";
         runtime().createProfileFromUi("", new ProxyConfig());
+        this.profileScroll = maxScroll(runtime().getProfileNames());
+        loadFromRuntime();
+    }
+
+    private void deleteProfile() {
+        ProxyRuntime runtime = runtime();
+        if (runtime.getProfileCount() <= 1) return;
+        runtime.deleteProfile(runtime.getActiveProfileIndex());
+        this.profileScroll = clampScroll(this.profileScroll, runtime.getProfileNames());
         loadFromRuntime();
     }
 
     private void renameProfile() {
         runtime().renameActiveProfile(this.profileNameField.getValue());
-        this.localError = "";
         loadFromRuntime();
     }
 
-    private void cycleProxyType() {
-        ProxyType[] values = ProxyType.values();
-        int index = (this.selectedType.ordinal() + 1) % values.length;
-        this.selectedType = values[index];
-        this.typeButton.setMessage(typeButtonText());
+    private void selectType(ProxyType type) {
+        this.selectedType = type;
+        refreshControls();
     }
 
     private void applyConfig() {
         this.localError = "";
-
-        ProxyConfig config = parseFormConfig();
-        if (config == null) {
-            return;
-        }
-
+        ProxyConfig config = parseForm();
+        if (config == null) return;
         runtime().applyFromUi(config, this.profileNameField.getValue());
         loadFromRuntime();
     }
 
-    private void resetForm() {
-        this.localError = "";
-        loadFromRuntime();
-    }
-
-    private ProxyConfig parseFormConfig() {
+    private ProxyConfig parseForm() {
         String host = this.hostField.getValue().trim();
-        String portText = this.portField.getValue().trim();
-
         int port;
         try {
-            port = Integer.parseInt(portText);
+            port = Integer.parseInt(this.portField.getValue().trim());
         } catch (NumberFormatException exception) {
-            this.localError = "Port must be a number between 1 and 65535.";
+            this.localError = "Port must be 1–65535.";
+            setPage(Page.CONNECTION);
             return null;
         }
-
         if (host.isBlank() || port < 1 || port > 65535) {
             this.localError = "Host and port are required.";
+            setPage(Page.CONNECTION);
             return null;
         }
-
         ProxyConfig config = new ProxyConfig();
         config.enabled = true;
         config.host = host;
@@ -455,337 +465,152 @@ public final class ProxyConfigScreen extends Screen {
         return config;
     }
 
+    private void resetForm() {
+        this.localError = "";
+        loadFromRuntime();
+    }
+
     private void loadFromRuntime() {
         ProxyRuntime runtime = runtime();
         ProxyConfig config = runtime.getActiveConfigCopy().normalized();
-
         this.hostField.setValue(config.host == null ? "" : config.host);
         this.portField.setValue(config.enabled || !config.host.isBlank() ? Integer.toString(config.port) : "");
         this.usernameField.setValue(config.username == null ? "" : config.username);
         this.passwordField.setValue(config.password == null ? "" : config.password);
         this.profileNameField.setValue(runtime.getActiveProfileName());
-        refreshSuggestionForCurrentText(this.hostField, "Host / IP");
-        refreshSuggestionForCurrentText(this.portField, "Port");
-        refreshSuggestionForCurrentText(this.usernameField, "Username (optional)");
-        refreshSuggestionForCurrentText(this.passwordField, "Password (optional)");
-        refreshSuggestionForCurrentText(this.profileNameField, "Profile name");
+        configureSuggestion(this.hostField, "Proxy hostname or IP");
+        configureSuggestion(this.portField, "Port");
+        configureSuggestion(this.usernameField, "Optional username");
+        configureSuggestion(this.passwordField, "Optional password");
+        configureSuggestion(this.profileNameField, "Profile name");
         this.selectedType = config.type;
-
-        if (this.typeButton != null) {
-            this.typeButton.setMessage(typeButtonText());
-        }
+        refreshControls();
     }
 
-    private Component typeButtonText() {
-        return Component.literal("Type: ").append(this.selectedType.asText());
+    private void refreshControls() {
+        if (this.socks5Button != null) {
+            this.socks5Button.setSelected(this.selectedType == ProxyType.SOCKS5);
+            this.httpButton.setSelected(this.selectedType == ProxyType.HTTP);
+            this.httpsButton.setSelected(this.selectedType == ProxyType.HTTPS);
+        }
+        if (this.deleteProfileButton != null) this.deleteProfileButton.active = runtime().getProfileCount() > 1;
+    }
+
+    private ProxyRuntime runtime() {
+        return ProxyRuntimeHolder.getRequiredRuntime();
+    }
+
+    private int statusColor(ProxyStatus status) {
+        return switch (status) {
+            case CONNECTED -> SUCCESS;
+            case CONNECTING -> WARNING;
+            case ERROR -> ERROR;
+            case DISABLED -> DISABLED;
+        };
+    }
+
+    private String fit(String value, int width) {
+        if (value == null || value.isBlank()) return "—";
+        if (this.font.width(value) <= width) return value;
+        return this.font.plainSubstrByWidth(value, Math.max(0, width - this.font.width("..."))) + "...";
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (isInListBounds(mouseX, mouseY)) {
-            List<String> profiles = runtime().getProfileNames();
-            int maxScroll = maxProfileScroll(profiles);
-            if (verticalAmount < 0) {
-                this.profileListScroll = Math.min(maxScroll, this.profileListScroll + 1);
-            } else if (verticalAmount > 0) {
-                this.profileListScroll = Math.max(0, this.profileListScroll - 1);
-            }
-            return true;
-        }
-
-        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    public void onClose() {
+        if (this.minecraft != null) this.minecraft.setScreenAndShow(this.parent);
     }
 
-    @Override
-    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
-        if (click.button() == 0 && isInListBounds(click.x(), click.y())) {
-            List<String> profiles = runtime().getProfileNames();
-            int visibleStart = this.profileListScroll;
-            int row = (int) ((click.y() - this.listStartY) / LIST_ROW_HEIGHT);
-            int selectedIndex = visibleStart + row;
-            if (selectedIndex >= 0 && selectedIndex < profiles.size()) {
-                int listX = this.rightPanelX + 10;
-                int listWidth = RIGHT_PANEL_WIDTH - 20;
-                int dotX = listX + listWidth - 10;
-                int rowY = this.listStartY + row * LIST_ROW_HEIGHT;
-
-                if (profiles.size() > 1) {
-                    int deleteBtnX = dotX - DELETE_BUTTON_SIZE - 4;
-                    int deleteBtnY = rowY + (LIST_ROW_HEIGHT - DELETE_BUTTON_SIZE) / 2;
-                    if (click.x() >= deleteBtnX && click.x() <= deleteBtnX + DELETE_BUTTON_SIZE
-                        && click.y() >= deleteBtnY && click.y() <= deleteBtnY + DELETE_BUTTON_SIZE) {
-                        runtime().deleteProfile(selectedIndex);
-                        this.localError = "";
-                        this.profileListScroll = clampScroll(this.profileListScroll, runtime().getProfileNames());
-                        loadFromRuntime();
-                        return true;
-                    }
-                }
-
-                runtime().selectActiveProfile(selectedIndex);
-                this.localError = "";
-                loadFromRuntime();
-                return true;
-            }
-        }
-
-        return super.mouseClicked(click, doubleClick);
-    }
-
-    private void renderPanels(GuiGraphicsExtractor context) {
-        int leftPanelRight = this.leftPanelX + LEFT_PANEL_WIDTH;
-        int rightPanelRight = this.rightPanelX + RIGHT_PANEL_WIDTH;
-        int panelBottom = this.panelY + this.panelHeight;
-
-        context.fill(0, 0, this.width, this.height, COLOR_SCREEN_OVERLAY);
-
-        context.fill(this.leftPanelX, this.panelY, leftPanelRight, panelBottom, COLOR_PANEL_BG);
-        drawPanelBorder(context, this.leftPanelX, this.panelY, LEFT_PANEL_WIDTH, this.panelHeight, COLOR_BORDER);
-
-        context.fill(this.rightPanelX, this.panelY, rightPanelRight, panelBottom, COLOR_RIGHT_PANEL_BG);
-        drawPanelBorder(context, this.rightPanelX, this.panelY, RIGHT_PANEL_WIDTH, this.panelHeight, COLOR_BORDER);
-
-        context.fill(this.leftPanelX + 2, this.panelY + 1, leftPanelRight - 2, this.panelY + 2, COLOR_GLOW);
-    }
-
-    private void renderStatusBlock(GuiGraphicsExtractor context, int contentX) {
-        ProxyRuntime runtime = runtime();
-        ProxyStatus status = runtime.getStatus();
-
-        int statusColor = switch (status) {
-            case CONNECTED -> COLOR_STATUS_OK;
-            case CONNECTING -> COLOR_STATUS_CONNECTING;
-            case DISABLED -> COLOR_STATUS_DISABLED;
-            case ERROR -> COLOR_STATUS_ERROR;
-        };
-
-        String statusText = switch (status) {
-            case CONNECTED -> "STATUS: CONNECTED";
-            case CONNECTING -> "STATUS: CONNECTING...";
-            case DISABLED -> "STATUS: DISABLED";
-            case ERROR -> "STATUS: ERROR";
-        };
-
-        long latencyMs = runtime.getLatencyMs();
-        String latencyText = latencyMs >= 0 ? "LATENCY: " + latencyMs + "ms" : "LATENCY: —";
-        String ipText = runtime.getExternalIp() == null || runtime.getExternalIp().isBlank() ? "IP: —" : "IP: " + runtime.getExternalIp();
-
-        context.text(this.font, Component.literal(statusText), contentX, this.statusLineY, statusColor, true);
-        context.text(this.font, Component.literal(ipText), contentX, this.ipLineY, COLOR_LABEL, true);
-        context.text(this.font, Component.literal(latencyText), contentX, this.latencyLineY, COLOR_LABEL, true);
-    }
-
-    private void renderStoredProfilesList(GuiGraphicsExtractor context, int mouseX, int mouseY) {
-        int titleY = this.panelY + 14;
-        context.centeredText(
-            this.font,
-            Component.literal("STORED PROXIES"),
-            this.rightPanelX + RIGHT_PANEL_WIDTH / 2,
-            titleY,
-            COLOR_TITLE
-        );
-        context.fill(this.rightPanelX + 8, this.panelY + 26, this.rightPanelX + RIGHT_PANEL_WIDTH - 8, this.panelY + 27, COLOR_BORDER);
-
-        List<String> profiles = runtime().getProfileNames();
-        this.profileListScroll = clampScroll(this.profileListScroll, profiles);
-
-        if (profiles.isEmpty()) {
-            context.centeredText(
-                this.font,
-                Component.literal("No profiles saved"),
-                this.rightPanelX + RIGHT_PANEL_WIDTH / 2,
-                this.panelY + this.panelHeight / 2,
-                COLOR_LABEL
-            );
-            return;
-        }
-
-        int listX = this.rightPanelX + 10;
-        int listWidth = RIGHT_PANEL_WIDTH - 20;
-        int visibleRows = Math.max(1, (this.listEndY - this.listStartY) / LIST_ROW_HEIGHT);
-        int activeIndex = runtime().getActiveProfileIndex();
-        ProxyStatus status = runtime().getStatus();
-
-        context.enableScissor(listX, this.listStartY, listX + listWidth, this.listEndY);
-        for (int i = 0; i < visibleRows; i++) {
-            int profileIndex = this.profileListScroll + i;
-            if (profileIndex >= profiles.size()) {
-                break;
-            }
-
-            int rowY = this.listStartY + i * LIST_ROW_HEIGHT;
-            boolean hovered = mouseX >= listX && mouseX <= listX + listWidth && mouseY >= rowY && mouseY < rowY + LIST_ROW_HEIGHT;
-            if (hovered) {
-                context.fill(listX, rowY, listX + listWidth, rowY + LIST_ROW_HEIGHT, 0x33FFFFFF);
-            }
-
-            if (profileIndex == activeIndex) {
-                context.fill(listX, rowY, listX + listWidth, rowY + LIST_ROW_HEIGHT, 0x22BC5CC7);
-            }
-
-            context.text(this.font, Component.literal(profiles.get(profileIndex)), listX + 6, rowY + 6, COLOR_LABEL, true);
-
-            int dotColor;
-            if (profileIndex != activeIndex) {
-                dotColor = 0xFF777777;
-            } else {
-                dotColor = switch (status) {
-                    case CONNECTED -> COLOR_STATUS_OK;
-                    case CONNECTING -> COLOR_STATUS_CONNECTING;
-                    case DISABLED -> COLOR_STATUS_DISABLED;
-                    case ERROR -> COLOR_STATUS_ERROR;
-                };
-            }
-
-            int dotX = listX + listWidth - 10;
-            int dotY = rowY + LIST_ROW_HEIGHT / 2 - 2;
-            context.fill(dotX, dotY, dotX + 4, dotY + 4, dotColor);
-
-            if (profiles.size() > 1) {
-                int deleteBtnX = dotX - DELETE_BUTTON_SIZE - 4;
-                int deleteBtnY = rowY + (LIST_ROW_HEIGHT - DELETE_BUTTON_SIZE) / 2;
-                boolean deleteHovered = mouseX >= deleteBtnX && mouseX <= deleteBtnX + DELETE_BUTTON_SIZE
-                    && mouseY >= deleteBtnY && mouseY <= deleteBtnY + DELETE_BUTTON_SIZE;
-
-                int deleteBg = deleteHovered ? 0x66BC5CC7 : 0x33882288;
-                context.fill(deleteBtnX, deleteBtnY, deleteBtnX + DELETE_BUTTON_SIZE, deleteBtnY + DELETE_BUTTON_SIZE, deleteBg);
-                drawPanelBorder(context, deleteBtnX, deleteBtnY, DELETE_BUTTON_SIZE, DELETE_BUTTON_SIZE, COLOR_BORDER);
-
-                int xColor = deleteHovered ? 0xFFFFFFFF : 0xFFAA55BB;
-                int xCenterX = deleteBtnX + DELETE_BUTTON_SIZE / 2;
-                int xCenterY = deleteBtnY + (DELETE_BUTTON_SIZE - this.font.lineHeight) / 2;
-                context.centeredText(this.font, Component.literal("x"), xCenterX, xCenterY, xColor);
-            }
-        }
-        context.disableScissor();
-    }
-
-    private void drawFieldChrome(GuiGraphicsExtractor context, EditBox field) {
-        int x1 = field.getX() - 1;
-        int y1 = field.getY() - 1;
-        int x2 = field.getX() + field.getWidth() + 1;
-        int y2 = field.getY() + field.getHeight() + 1;
-
-        context.fill(x1, y1, x2, y2, 0xFF1A1A22);
-        drawPanelBorder(context, x1, y1, x2 - x1, y2 - y1, COLOR_BORDER);
-    }
-
-    private static void drawPanelBorder(GuiGraphicsExtractor context, int x, int y, int width, int height, int color) {
-        context.fill(x, y, x + width, y + 1, color);
-        context.fill(x, y + height - 1, x + width, y + height, color);
-        context.fill(x, y, x + 1, y + height, color);
-        context.fill(x + width - 1, y, x + width, y + height, color);
-    }
-
-    private boolean isInListBounds(double mouseX, double mouseY) {
-        int listX = this.rightPanelX + 10;
-        int listWidth = RIGHT_PANEL_WIDTH - 20;
-        return mouseX >= listX
-            && mouseX <= listX + listWidth
-            && mouseY >= this.listStartY
-            && mouseY <= this.listEndY;
-    }
-
-    private int maxProfileScroll(List<String> profileNames) {
-        int visibleRows = Math.max(1, (this.listEndY - this.listStartY) / LIST_ROW_HEIGHT);
-        return Math.max(0, profileNames.size() - visibleRows);
-    }
-
-    private int clampScroll(int scroll, List<String> profileNames) {
-        int max = maxProfileScroll(profileNames);
-        if (scroll < 0) {
-            return 0;
-        }
-        if (scroll > max) {
-            return max;
-        }
-        return scroll;
-    }
-
-    private StyledButtonWidget buildStyledButton(int x, int y, int w, int h, Component label, Runnable action, boolean activeAccent) {
-        return new StyledButtonWidget(x, y, w, h, label, action, activeAccent);
-    }
-
-    private static final class StyledButtonWidget extends AbstractButton {
-        private final boolean activeAccent;
-        private final Runnable onPress;
-
-        protected StyledButtonWidget(int x, int y, int width, int height, Component message, Runnable onPress, boolean activeAccent) {
-            super(x, y, width, height, message);
-            this.activeAccent = activeAccent;
-            this.onPress = onPress;
-        }
-
-        @Override
-        protected void extractContents(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-            int backgroundColor = this.activeAccent
-                ? 0xFF1A0A2A
-                : (this.isHovered() ? 0xFF1A1A2E : 0xFF0F0F18);
-
-            int x = this.getX();
-            int y = this.getY();
-            int right = x + this.width;
-            int bottom = y + this.height;
-
-            context.fill(x, y, right, bottom, backgroundColor);
-            context.fill(x, y, right, y + 1, COLOR_BORDER);
-            context.fill(x, bottom - 1, right, bottom, COLOR_BORDER);
-            context.fill(x, y, x + 1, bottom, COLOR_BORDER);
-            context.fill(right - 1, y, right, bottom, COLOR_BORDER);
-
-            int textColor = this.active ? COLOR_TITLE : 0xFF666666;
-            Minecraft client = Minecraft.getInstance();
-            if (client != null && client.font != null) {
-                context.centeredText(
-                    client.font,
-                    this.getMessage(),
-                    x + this.width / 2,
-                    y + (this.height - 8) / 2,
-                    textColor
-                );
-            }
-        }
-
-        @Override
-        public void onPress(InputWithModifiers ctx) {
-            if (!this.active || this.onPress == null) {
-                return;
-            }
-
-            this.onPress.run();
-        }
-
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-            this.defaultButtonNarrationText(narrationElementOutput);
-        }
-    }
-
-    private static void configureSuggestionBehavior(EditBox field, String placeholder) {
+    private static void configureSuggestion(EditBox field, String placeholder) {
         field.setResponder(text -> field.setSuggestion(text == null || text.isEmpty() ? placeholder : ""));
-        refreshSuggestionForCurrentText(field, placeholder);
-    }
-
-    private static void refreshSuggestionForCurrentText(EditBox field, String placeholder) {
         String text = field.getValue();
         field.setSuggestion(text == null || text.isEmpty() ? placeholder : "");
     }
 
-    private static final class CenteredTextFieldWidget extends EditBox {
-        private final Font textRenderer;
+    private static void border(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y, x + 1, y + height, color);
+        graphics.fill(x + width - 1, y, x + width, y + height, color);
+    }
 
-        public CenteredTextFieldWidget(Font textRenderer, int x, int y, int width, int height, Component text) {
-            super(textRenderer, x, y, width, height, text);
-            this.textRenderer = textRenderer;
+    private enum Page { CONNECTION, AUTHENTICATION, PROFILES }
+    private enum Tone { PRIMARY, SECONDARY, SEGMENT, NAV, DANGER }
+
+    private static final class FlatButton extends AbstractButton {
+        private final Runnable action;
+        private final Tone tone;
+        private boolean selected;
+
+        private FlatButton(int x, int y, int width, int height, Component message, Runnable action, Tone tone) {
+            super(x, y, width, height, message);
+            this.action = action;
+            this.tone = tone;
+        }
+
+        private void setSelected(boolean selected) {
+            this.selected = selected;
         }
 
         @Override
-        public void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-            int verticalOffset = (this.getHeight() - this.textRenderer.lineHeight) / 2;
-            int originalY = this.getY();
-            this.setY(originalY + verticalOffset);
-            super.extractWidgetRenderState(context, mouseX, mouseY, delta);
-            this.setY(originalY);
+        protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+            int background;
+            int outline;
+            int textColor;
+            if (!this.active) {
+                background = FIELD;
+                outline = BORDER_SOFT;
+                textColor = DIM;
+            } else if (this.tone == Tone.PRIMARY) {
+                background = isHovered() ? 0xFFF05E68 : ACCENT;
+                outline = background;
+                textColor = ACCENT_DARK;
+            } else if (this.selected) {
+                background = SURFACE_SELECTED;
+                outline = ACCENT;
+                textColor = ACCENT;
+            } else if (this.tone == Tone.DANGER) {
+                background = isHovered() ? 0xFF2B191D : FIELD;
+                outline = isHovered() ? ERROR : BORDER;
+                textColor = isHovered() ? ERROR : MUTED;
+            } else {
+                background = isHovered() ? SURFACE_HOVER : FIELD;
+                outline = this.tone == Tone.NAV ? BORDER_SOFT : BORDER;
+                textColor = isHovered() ? TEXT : MUTED;
+            }
+            graphics.fill(getX(), getY(), getX() + this.width, getY() + this.height, background);
+            border(graphics, getX(), getY(), this.width, this.height, outline);
+            Minecraft client = Minecraft.getInstance();
+            if (client != null && client.font != null) {
+                graphics.centeredText(client.font, getMessage(), getX() + this.width / 2,
+                    getY() + (this.height - client.font.lineHeight) / 2, textColor);
+            }
+        }
+
+        @Override
+        public void onPress(InputWithModifiers context) {
+            if (this.active && this.action != null) this.action.run();
+        }
+
+        @Override
+        public void updateWidgetNarration(NarrationElementOutput output) {
+            this.defaultButtonNarrationText(output);
+        }
+    }
+
+    private static final class CenteredEditBox extends EditBox {
+        private final Font font;
+
+        private CenteredEditBox(Font font, int x, int y, int width, int height, Component message) {
+            super(font, x, y, width, height, message);
+            this.font = font;
+        }
+
+        @Override
+        public void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+            int originalY = getY();
+            setY(originalY + Math.max(0, (getHeight() - this.font.lineHeight) / 2 - 1));
+            super.extractWidgetRenderState(graphics, mouseX, mouseY, delta);
+            setY(originalY);
         }
     }
 }
