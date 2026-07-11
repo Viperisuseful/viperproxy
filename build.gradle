@@ -49,6 +49,22 @@ java {
     withSourcesJar()
 }
 
+tasks.register('verifyMixinTargets', JavaExec) {
+    group = 'verification'
+    description = 'Verifies that every declared Mixin injection method exists in its Minecraft target class.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.viperproxy.mixin.MixinTargetVerifier'
+}
+
+tasks.named('test') {
+    failOnNoDiscoveredTests = false
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyMixinTargets')
+}
+
 jar {
     inputs.property 'archivesName', project.base.archivesName
 
