@@ -57,12 +57,21 @@ tasks.register('verifyMixinTargets', JavaExec) {
     mainClass = 'com.viperproxy.mixin.MixinTargetVerifier'
 }
 
+tasks.register('verifyProfileRename', JavaExec) {
+    group = 'verification'
+    description = 'Verifies profile renaming without changing proxy configuration.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.viperproxy.proxy.ProfileRenameVerifier'
+}
+
 tasks.named('test') {
     failOnNoDiscoveredTests = false
 }
 
 tasks.named('check') {
     dependsOn tasks.named('verifyMixinTargets')
+    dependsOn tasks.named('verifyProfileRename')
 }
 
 jar {

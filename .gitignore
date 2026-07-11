@@ -3,6 +3,7 @@ build/
 bin/
 out/
 run/
+logs/
 .idea/
 *.iml
 *.ipr

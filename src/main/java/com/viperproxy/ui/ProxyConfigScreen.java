@@ -32,6 +32,7 @@ public final class ProxyConfigScreen extends Screen {
 
     private static final Identifier LOGO_TEXTURE = Identifier.fromNamespaceAndPath("viperproxy", "textures/gui/logo.png");
     private static final int LOGO_DISPLAY_SIZE = 64;
+    private static final int LOGO_TEXTURE_SIZE = 2000;
 
     private static final int COLOR_SCREEN_OVERLAY = 0xCC000000;
     private static final int COLOR_PANEL_BG = 0xDD0A0A0F;
@@ -51,8 +52,9 @@ public final class ProxyConfigScreen extends Screen {
     private EditBox portField;
     private EditBox usernameField;
     private EditBox passwordField;
+    private EditBox profileNameField;
 
-    private StyledButtonWidget profileButton;
+    private StyledButtonWidget renameProfileButton;
     private StyledButtonWidget newProfileButton;
     private StyledButtonWidget typeButton;
     private StyledButtonWidget applyButton;
@@ -156,16 +158,39 @@ public final class ProxyConfigScreen extends Screen {
         this.addRenderableWidget(this.usernameField);
         this.addRenderableWidget(this.passwordField);
 
-        int profileButtonWidth = (int) Math.floor(contentWidth * 0.60);
-        int newProfileButtonWidth = contentWidth - profileButtonWidth - 6;
+        int profileNameWidth = (int) Math.floor(contentWidth * 0.46);
+        int renameProfileButtonWidth = (int) Math.floor(contentWidth * 0.22);
+        int newProfileButtonWidth = contentWidth - profileNameWidth - renameProfileButtonWidth - 12;
 
-        this.profileButton = this.addRenderableWidget(
-            buildStyledButton(contentX, this.profileRowY, profileButtonWidth, ROW_HEIGHT, profileButtonText(), this::cycleProfile, true)
+        this.profileNameField = new CenteredTextFieldWidget(
+            this.font,
+            contentX,
+            this.profileRowY,
+            profileNameWidth,
+            ROW_HEIGHT,
+            Component.literal("Profile name")
+        );
+        this.profileNameField.setMaxLength(48);
+        this.profileNameField.setValue(runtime.getActiveProfileName());
+        this.profileNameField.setBordered(false);
+        configureSuggestionBehavior(this.profileNameField, "Profile name");
+        this.addRenderableWidget(this.profileNameField);
+
+        this.renameProfileButton = this.addRenderableWidget(
+            buildStyledButton(
+                contentX + profileNameWidth + 6,
+                this.profileRowY,
+                renameProfileButtonWidth,
+                ROW_HEIGHT,
+                Component.literal("SAVE NAME"),
+                this::renameProfile,
+                false
+            )
         );
 
         this.newProfileButton = this.addRenderableWidget(
             buildStyledButton(
-                contentX + profileButtonWidth + 6,
+                contentX + profileNameWidth + renameProfileButtonWidth + 12,
                 this.profileRowY,
                 newProfileButtonWidth,
                 ROW_HEIGHT,
@@ -303,11 +328,13 @@ public final class ProxyConfigScreen extends Screen {
         renderPanels(context);
 
         int logoX = this.leftPanelX + (LEFT_PANEL_WIDTH - LOGO_DISPLAY_SIZE) / 2;
-        context.blitSprite(
+        context.blit(
             RenderPipelines.GUI_TEXTURED,
             LOGO_TEXTURE,
             logoX, this.titleY,
-            LOGO_DISPLAY_SIZE, LOGO_DISPLAY_SIZE
+            0.0F, 0.0F,
+            LOGO_DISPLAY_SIZE, LOGO_DISPLAY_SIZE,
+            LOGO_TEXTURE_SIZE, LOGO_TEXTURE_SIZE
         );
         context.fill(this.leftPanelX + 8, this.titleSeparatorY, this.leftPanelX + LEFT_PANEL_WIDTH - 8, this.titleSeparatorY + 2, COLOR_BORDER);
 
@@ -317,17 +344,19 @@ public final class ProxyConfigScreen extends Screen {
         context.text(this.font, Component.literal("USERNAME / PASSWORD"), contentX, this.credentialsLabelY, COLOR_LABEL, true);
         context.text(this.font, Component.literal("TYPE"), contentX, this.typeLabelY, COLOR_LABEL, true);
 
+        drawFieldChrome(context, this.profileNameField);
         drawFieldChrome(context, this.hostField);
         drawFieldChrome(context, this.portField);
         drawFieldChrome(context, this.usernameField);
         drawFieldChrome(context, this.passwordField);
 
+        this.profileNameField.extractRenderState(context, mouseX, mouseY, delta);
         this.hostField.extractRenderState(context, mouseX, mouseY, delta);
         this.portField.extractRenderState(context, mouseX, mouseY, delta);
         this.usernameField.extractRenderState(context, mouseX, mouseY, delta);
         this.passwordField.extractRenderState(context, mouseX, mouseY, delta);
 
-        this.profileButton.extractRenderState(context, mouseX, mouseY, delta);
+        this.renameProfileButton.extractRenderState(context, mouseX, mouseY, delta);
         this.newProfileButton.extractRenderState(context, mouseX, mouseY, delta);
         this.typeButton.extractRenderState(context, mouseX, mouseY, delta);
         this.applyButton.extractRenderState(context, mouseX, mouseY, delta);
@@ -363,15 +392,15 @@ public final class ProxyConfigScreen extends Screen {
         return ProxyRuntimeHolder.getRequiredRuntime();
     }
 
-    private void cycleProfile() {
-        runtime().cycleActiveProfile();
-        this.localError = "";
-        loadFromRuntime();
-    }
-
     private void newProfile() {
         this.localError = "";
         runtime().createProfileFromUi("", new ProxyConfig());
+        loadFromRuntime();
+    }
+
+    private void renameProfile() {
+        runtime().renameActiveProfile(this.profileNameField.getValue());
+        this.localError = "";
         loadFromRuntime();
     }
 
@@ -390,7 +419,7 @@ public final class ProxyConfigScreen extends Screen {
             return;
         }
 
-        runtime().applyFromUi(config, runtime().getActiveProfileName());
+        runtime().applyFromUi(config, this.profileNameField.getValue());
         loadFromRuntime();
     }
 
@@ -434,22 +463,17 @@ public final class ProxyConfigScreen extends Screen {
         this.portField.setValue(config.enabled || !config.host.isBlank() ? Integer.toString(config.port) : "");
         this.usernameField.setValue(config.username == null ? "" : config.username);
         this.passwordField.setValue(config.password == null ? "" : config.password);
+        this.profileNameField.setValue(runtime.getActiveProfileName());
         refreshSuggestionForCurrentText(this.hostField, "Host / IP");
         refreshSuggestionForCurrentText(this.portField, "Port");
         refreshSuggestionForCurrentText(this.usernameField, "Username (optional)");
         refreshSuggestionForCurrentText(this.passwordField, "Password (optional)");
+        refreshSuggestionForCurrentText(this.profileNameField, "Profile name");
         this.selectedType = config.type;
 
-        if (this.profileButton != null) {
-            this.profileButton.setMessage(profileButtonText());
-        }
         if (this.typeButton != null) {
             this.typeButton.setMessage(typeButtonText());
         }
-    }
-
-    private Component profileButtonText() {
-        return Component.literal("ACTIVE: " + runtime().getActiveProfileName());
     }
 
     private Component typeButtonText() {

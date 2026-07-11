@@ -199,6 +199,19 @@ public final class ProxyRuntime {
         selectActiveProfile(nextIndex);
     }
 
+    public synchronized void renameActiveProfile(String profileName) {
+        ensureProfilesExist();
+
+        ProxyProfile active = this.profiles.get(this.activeProfileIndex).copy();
+        active.setName(normalizeProfileName(profileName, this.activeProfileIndex + 1));
+
+        List<ProxyProfile> updatedProfiles = copyProfiles(this.profiles);
+        updatedProfiles.set(this.activeProfileIndex, active);
+        this.profiles = updatedProfiles;
+
+        persistProfiles();
+    }
+
     public synchronized void selectActiveProfile(int profileIndex) {
         ensureProfilesExist();
         this.activeProfileIndex = sanitizeProfileIndex(profileIndex, this.profiles.size());
