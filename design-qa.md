@@ -21,3 +21,12 @@ Test viewport: 1920×1000, Minecraft GUI scale 4 (480×250 logical pixels).
 - `verifyProfileRename`: passed
 
 final result: passed
+
+## 0.8.4 follow-up
+
+- Replaced the cropped image logo with a compact text wordmark.
+- Moved host, port, username, password, and profile-name labels inside their fields.
+- Restored vertical centering for borderless field text.
+- Full in-game visual verification was explicitly waived by the user for this build.
+
+final result: blocked (manual in-game verification requested)

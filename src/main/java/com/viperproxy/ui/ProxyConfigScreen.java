@@ -15,10 +15,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 
 public final class ProxyConfigScreen extends Screen {
@@ -26,17 +24,10 @@ public final class ProxyConfigScreen extends Screen {
     private static final int PANEL_MAX_HEIGHT = 360;
     private static final int HEADER_HEIGHT = 36;
     private static final int FOOTER_HEIGHT = 36;
-    private static final int FIELD_HEIGHT = 22;
+    private static final int FIELD_HEIGHT = 24;
     private static final int BUTTON_HEIGHT = 22;
     private static final int ROW_HEIGHT = 26;
     private static final int ROW_GAP = 3;
-
-    private static final Identifier LOGO = Identifier.fromNamespaceAndPath("viperproxy", "textures/gui/logo.png");
-    private static final int LOGO_TEX_SIZE = 2000;
-    private static final int LOGO_X = 59;
-    private static final int LOGO_Y = 603;
-    private static final int LOGO_W = 1483;
-    private static final int LOGO_H = 395;
 
     private static final int OVERLAY = 0xB9000000;
     private static final int PANEL = 0xF21B1C20;
@@ -110,11 +101,11 @@ public final class ProxyConfigScreen extends Screen {
 
         int contentWidth = this.contentRight - this.contentX;
         int hostCardY = this.contentTop + 30;
-        int hostFieldY = hostCardY + 32;
+        int hostFieldY = hostCardY + 28;
         int portWidth = Math.min(86, Math.max(62, contentWidth / 4));
-        this.hostField = field(this.contentX + 10, hostFieldY, contentWidth - portWidth - 26, 255, config.host, "Proxy hostname or IP");
+        this.hostField = field(this.contentX + 10, hostFieldY, contentWidth - portWidth - 26, 255, config.host, "HOST / IP");
         this.portField = field(this.contentRight - portWidth - 10, hostFieldY, portWidth, 5,
-            config.enabled || !config.host.isBlank() ? Integer.toString(config.port) : "", "Port");
+            config.enabled || !config.host.isBlank() ? Integer.toString(config.port) : "", "PORT");
 
         int protocolY = hostCardY + 70;
         int segmentGap = 6;
@@ -126,15 +117,15 @@ public final class ProxyConfigScreen extends Screen {
         int authCardY = this.contentTop + 30;
         int credentialGap = 8;
         int credentialWidth = (contentWidth - 28) / 2;
-        this.usernameField = field(this.contentX + 10, authCardY + 32, credentialWidth, 128, config.username, "Optional username");
-        this.passwordField = field(this.contentRight - 10 - credentialWidth, authCardY + 32, credentialWidth, 128, config.password, "Optional password");
+        this.usernameField = field(this.contentX + 10, authCardY + 28, credentialWidth, 128, config.username, "USERNAME (OPTIONAL)");
+        this.passwordField = field(this.contentRight - 10 - credentialWidth, authCardY + 28, credentialWidth, 128, config.password, "PASSWORD (OPTIONAL)");
         this.passwordField.addFormatter((text, firstCharacterIndex) ->
             FormattedCharSequence.forward("•".repeat(text.length()), Style.EMPTY));
 
         int profileCardY = this.contentTop + 30;
         int saveWidth = 74;
         this.profileNameField = field(this.contentX + 10, profileCardY + 24, contentWidth - saveWidth - 26, 48,
-            runtime.getActiveProfileName(), "Profile name");
+            runtime.getActiveProfileName(), "PROFILE NAME");
         this.saveNameButton = button(this.contentRight - saveWidth - 10, profileCardY + 24, saveWidth, FIELD_HEIGHT,
             "RENAME", this::renameProfile, Tone.SECONDARY);
 
@@ -212,13 +203,10 @@ public final class ProxyConfigScreen extends Screen {
     }
 
     private void renderHeader(GuiGraphicsExtractor graphics) {
-        int logoW = 68;
-        int logoH = 18;
-        int logoX = this.panelX + 12;
-        int logoY = this.panelY + 9;
-        graphics.fill(logoX - 3, logoY - 3, logoX + logoW + 3, logoY + logoH + 3, ACCENT);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, LOGO, logoX, logoY, LOGO_X, LOGO_Y,
-            logoW, logoH, LOGO_W, LOGO_H, LOGO_TEX_SIZE, LOGO_TEX_SIZE);
+        int brandX = this.panelX + 14;
+        int brandY = this.panelY + 9;
+        graphics.fill(brandX, brandY, brandX + 3, brandY + 18, ACCENT);
+        graphics.text(this.font, Component.literal("VIPER PROXY"), brandX + 11, brandY + 5, TEXT, true);
 
         ProxyStatus status = runtime().getStatus();
         String label = switch (status) {
@@ -264,8 +252,6 @@ public final class ProxyConfigScreen extends Screen {
         int cardY = this.contentTop + 30;
         card(graphics, cardY, 64);
         graphics.text(this.font, Component.literal("ENDPOINT"), this.contentX + 10, cardY + 8, DIM, false);
-        graphics.text(this.font, Component.literal("HOST / IP"), this.hostField.getX(), cardY + 19, MUTED, false);
-        graphics.text(this.font, Component.literal("PORT"), this.portField.getX(), cardY + 19, MUTED, false);
         int protocolY = cardY + 70;
         card(graphics, protocolY, 50);
         graphics.text(this.font, Component.literal("PROTOCOL"), this.contentX + 10, protocolY + 8, DIM, false);
@@ -276,8 +262,6 @@ public final class ProxyConfigScreen extends Screen {
         int cardY = this.contentTop + 30;
         card(graphics, cardY, 64);
         graphics.text(this.font, Component.literal("PROXY CREDENTIALS"), this.contentX + 10, cardY + 8, DIM, false);
-        graphics.text(this.font, Component.literal("USERNAME"), this.usernameField.getX(), cardY + 19, MUTED, false);
-        graphics.text(this.font, Component.literal("PASSWORD"), this.passwordField.getX(), cardY + 19, MUTED, false);
     }
 
     private void renderProfilesPage(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -478,11 +462,11 @@ public final class ProxyConfigScreen extends Screen {
         this.usernameField.setValue(config.username == null ? "" : config.username);
         this.passwordField.setValue(config.password == null ? "" : config.password);
         this.profileNameField.setValue(runtime.getActiveProfileName());
-        configureSuggestion(this.hostField, "Proxy hostname or IP");
-        configureSuggestion(this.portField, "Port");
-        configureSuggestion(this.usernameField, "Optional username");
-        configureSuggestion(this.passwordField, "Optional password");
-        configureSuggestion(this.profileNameField, "Profile name");
+        configureSuggestion(this.hostField, "HOST / IP");
+        configureSuggestion(this.portField, "PORT");
+        configureSuggestion(this.usernameField, "USERNAME (OPTIONAL)");
+        configureSuggestion(this.passwordField, "PASSWORD (OPTIONAL)");
+        configureSuggestion(this.profileNameField, "PROFILE NAME");
         this.selectedType = config.type;
         refreshControls();
     }
@@ -613,4 +597,5 @@ public final class ProxyConfigScreen extends Screen {
             setY(originalY);
         }
     }
+
 }
