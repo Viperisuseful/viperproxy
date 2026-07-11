@@ -18,7 +18,7 @@ public abstract class ClientConnectionMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("ViperProxy");
 
     @Inject(
-        method = "addHandlers(Lio/netty/channel/ChannelPipeline;Lnet/minecraft/network/protocol/PacketFlow;ZLnet/minecraft/network/BandwidthDebugMonitor;)V",
+        method = "configureSerialization(Lio/netty/channel/ChannelPipeline;Lnet/minecraft/network/protocol/PacketFlow;ZLnet/minecraft/network/BandwidthDebugMonitor;)V",
         at = @At("HEAD")
     )
     private static void viperproxy$injectProxyHandlers(
