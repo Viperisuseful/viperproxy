@@ -65,6 +65,14 @@ tasks.register('verifyProfileRename', JavaExec) {
     mainClass = 'com.viperproxy.proxy.ProfileRenameVerifier'
 }
 
+tasks.register('verifySocksResourcePackAuth', JavaExec) {
+    group = 'verification'
+    description = 'Verifies authenticated JDK SOCKS5 routing used by Minecraft resource-pack downloads.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.viperproxy.proxy.SocksResourcePackAuthVerifier'
+}
+
 tasks.named('test') {
     failOnNoDiscoveredTests = false
 }
@@ -72,6 +80,7 @@ tasks.named('test') {
 tasks.named('check') {
     dependsOn tasks.named('verifyMixinTargets')
     dependsOn tasks.named('verifyProfileRename')
+    dependsOn tasks.named('verifySocksResourcePackAuth')
 }
 
 jar {

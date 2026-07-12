@@ -9,7 +9,6 @@ import io.netty.handler.proxy.ProxyHandler;
 import java.net.Authenticator;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
@@ -557,8 +556,8 @@ public final class ProxyRuntime {
             ProxySelector.setDefault(new EnforcedProxySelector());
         }
 
-        if (!(Authenticator.getDefault() instanceof EnforcedProxyAuthenticator)) {
-            Authenticator.setDefault(new EnforcedProxyAuthenticator());
+        if (!(Authenticator.getDefault() instanceof ViperProxyAuthenticator)) {
+            Authenticator.setDefault(new ViperProxyAuthenticator(() -> this.activeConfig));
         }
 
         clearProxyProperties();
@@ -777,22 +776,6 @@ public final class ProxyRuntime {
         @Override
         public void connectFailed(URI uri, SocketAddress sa, java.io.IOException ioe) {
             markRuntimeError(FailureReason.CONNECTION_REFUSED, "Proxy selector connect failed: " + simplifyError(ioe));
-        }
-    }
-
-    private final class EnforcedProxyAuthenticator extends Authenticator {
-        @Override
-        protected PasswordAuthentication getPasswordAuthentication() {
-            ProxyConfig cfg = activeConfig.normalized();
-            if (!cfg.isUsable() || !cfg.hasCredentials()) {
-                return null;
-            }
-
-            if (getRequestorType() != RequestorType.PROXY) {
-                return null;
-            }
-
-            return new PasswordAuthentication(cfg.username, cfg.password.toCharArray());
         }
     }
 
